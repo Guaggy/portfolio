@@ -5,8 +5,13 @@
  */
 
 export type Theme = 'dark' | 'light';
+export type SiteStatus = 'live' | 'maintenance';
 
 export const siteConfig = {
+  // ---- Site status ----------------------------------------------------------
+  siteStatus: "live" as SiteStatus, // live = normal site; maintenance = placeholder page on every address
+  searchConsoleVerification: "WWbkeG8gm7ap-wvdMXfU9cLDsgHnGVb2YjGSeMepMKE", // Google Search Console verification code (empty = not set)
+
   // ---- Identity -------------------------------------------------------------
   name: "Even Mælum",                    // header, footer, page titles
   siteUrl: "https://evenmaelum.dev",              // canonical URL, RSS and sitemap (keep in sync with astro.config.mjs)

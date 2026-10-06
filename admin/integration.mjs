@@ -121,6 +121,7 @@ async function writeConfig(config) {
   if (!config || !config.features) throw new Error('Config is missing.');
   if (!config.name?.trim()) throw new Error('Site name cannot be empty.');
   if (!['dark', 'light'].includes(config.defaultTheme)) throw new Error('Default theme must be dark or light.');
+  if (!['live', 'maintenance'].includes(config.siteStatus)) throw new Error('Site status must be live or maintenance.');
   const pinned = config.pinnedProjects ?? [];
   if (pinned.length > 6) throw new Error('Pinned projects: maximum 6.');
   await fs.writeFile(path.join(ROOT, 'src/site.config.ts'), renderConfig(config), 'utf8');

@@ -112,6 +112,10 @@
     };
     // [label, path, type, options?]. Types: text, textarea, number, bool, select, lines (one item per line).
     const SETTINGS = [
+      ['Site status', [
+        ['Site is live, or shows a maintenance placeholder', 'siteStatus', 'select', ['live', 'maintenance']],
+        ['Google Search Console verification code (from the HTML tag method)', 'searchConsoleVerification', 'text'],
+      ]],
       ['Identity', [
         ['Site name (header, footer, titles)', 'name', 'text'],
         ['Site URL (keep equal to astro.config.mjs)', 'siteUrl', 'text'],

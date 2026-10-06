@@ -13,8 +13,13 @@ export function renderConfig(c) {
  */
 
 export type Theme = 'dark' | 'light';
+export type SiteStatus = 'live' | 'maintenance';
 
 export const siteConfig = {
+  // ---- Site status ----------------------------------------------------------
+  siteStatus: ${q(c.siteStatus)} as SiteStatus, // live = normal site; maintenance = placeholder page on every address
+  searchConsoleVerification: ${q(c.searchConsoleVerification)}, // Google Search Console verification code (empty = not set)
+
   // ---- Identity -------------------------------------------------------------
   name: ${q(c.name)},                    // header, footer, page titles
   siteUrl: ${q(c.siteUrl)},              // canonical URL, RSS and sitemap (keep in sync with astro.config.mjs)

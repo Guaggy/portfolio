@@ -1,0 +1,19 @@
+---
+// MAINTENANCE PLACEHOLDER: shown on every page when siteStatus is 'maintenance' in site.config.ts.
+// Edit the wording here. Contact links come from site.config.ts.
+import { siteConfig } from '../site.config';
+---
+<main class="maint">
+  <div class="wrap">
+    <p class="mono">{siteConfig.name}</p>
+    <h1>Back soon.</h1>
+    <p class="lead">This site is being updated. Please check back shortly.</p>
+    <p>Get in touch: <a href={`mailto:${siteConfig.email}`}>{siteConfig.email}</a></p>
+  </div>
+</main>
+
+<style>
+  .maint { min-height: 100vh; display: grid; place-items: center; text-align: center; }
+  .maint .wrap { padding: 40px 16px; }
+  .maint .lead { color: var(--muted); }
+</style>
