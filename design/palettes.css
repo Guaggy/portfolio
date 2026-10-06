@@ -1,0 +1,74 @@
+/*
+ * Colour palettes for the site. Each palette is one block of tokens.
+ * Pick one by setting data-palette on <html>, e.g. <html data-palette="blueprint">.
+ * Dark is the default. Light values apply under data-theme="light"
+ * or when the visitor's system is set to light and no theme is chosen.
+ * Contrast for body text must reach WCAG AA (4.5:1). Check before shipping.
+ */
+
+/* A. Blueprint (recommended) */
+:root[data-palette="blueprint"],
+:root:not([data-palette]) {
+  --bg: #0b1b2b;
+  --surface: #11263b;
+  --grid-minor: #1b3550;
+  --grid-major: #25476b;
+  --text: #e6eef7;
+  --text-muted: #9fb3c8;
+  --accent: #f5b700;
+  --focus: #7dd3fc;
+}
+:root[data-palette="blueprint"][data-theme="light"] {
+  --bg: #f5f8fb;
+  --surface: #ffffff;
+  --grid-minor: #dce5ef;
+  --grid-major: #c3d2e2;
+  --text: #0b1b2b;
+  --text-muted: #4a5d72;
+  --accent: #a86b00;
+  --focus: #0369a1;
+}
+
+/* B. Drafting paper */
+:root[data-palette="drafting"] {
+  --bg: #111418;
+  --surface: #1a1e24;
+  --grid-minor: #262c35;
+  --grid-major: #262c35;
+  --text: #e5e7eb;
+  --text-muted: #9ca3af;
+  --accent: #ff7a45;
+  --focus: #ffb38a;
+}
+:root[data-palette="drafting"][data-theme="light"] {
+  --bg: #f4f0e6;
+  --surface: #fbf8f1;
+  --grid-minor: #e0d9c6;
+  --grid-major: #e0d9c6;
+  --text: #1f2328;
+  --text-muted: #5b616b;
+  --accent: #b2380f;
+  --focus: #1d4ed8;
+}
+
+/* C. Graphite and teal */
+:root[data-palette="graphite"] {
+  --bg: #0e1116;
+  --surface: #161b22;
+  --grid-minor: #1f2630;
+  --grid-major: #1f2630;
+  --text: #e6edf3;
+  --text-muted: #8b98a9;
+  --accent: #2dd4bf;
+  --focus: #67e8f9;
+}
+:root[data-palette="graphite"][data-theme="light"] {
+  --bg: #ffffff;
+  --surface: #f6f8fa;
+  --grid-minor: #e4e8ee;
+  --grid-major: #e4e8ee;
+  --text: #0f172a;
+  --text-muted: #475569;
+  --accent: #0f766e;
+  --focus: #0e7490;
+}

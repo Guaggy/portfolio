@@ -1,0 +1,18 @@
+# dependencies and build output
+node_modules/
+dist/
+.astro/
+
+# local env and secrets
+.env
+.env.*
+!.env.example
+
+# local-only previews (not published)
+examples/
+
+# OS and editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
