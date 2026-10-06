@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<!-- LOCAL ADMIN PAGE. Only exists in `npm run dev` (see admin/integration.mjs). Not in the public site. -->
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>Site admin (local)</title>
+  <style is:global>
+    :root { --bg:#111317; --surface:#181b21; --text:#e6e9ee; --muted:#8a93a1; --accent:#ff8a3d; --line:#262b33; --bad:#ff6b6b; --ok:#7bd88f; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 "IBM Plex Sans", system-ui, sans-serif; padding-bottom: 110px; }
+    header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; padding: 14px 20px; border-bottom: 1px solid var(--line); }
+    header span { color: var(--muted); font-size: 13px; }
+    nav.tabs { display: flex; gap: 6px; padding: 10px 20px; border-bottom: 1px solid var(--line); }
+    button, .btn { background: none; color: var(--text); border: 1px solid var(--line); padding: 7px 12px; font: inherit; cursor: pointer; border-radius: 4px; }
+    button.primary { background: var(--accent); border-color: var(--accent); color: #111317; font-weight: 600; }
+    button.active { border-color: var(--accent); color: var(--accent); }
+    main { padding: 16px 20px; max-width: 1100px; }
+    .tab[hidden] { display: none; }
+    h2 { font-size: 18px; margin: 22px 0 8px; }
+    h2:first-child { margin-top: 0; }
+    .group { background: var(--surface); border: 1px solid var(--line); padding: 14px; margin-bottom: 14px; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+    .group > h2 { grid-column: 1 / -1; margin: 0; font-size: 15px; color: var(--accent); }
+    label.fld { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+    label.chk { display: flex; gap: 8px; align-items: center; color: var(--text); font-size: 14px; }
+    input, select, textarea { background: #0d0f13; color: var(--text); border: 1px solid var(--line); padding: 7px 9px; font: inherit; border-radius: 4px; width: 100%; }
+    textarea { min-height: 80px; resize: vertical; }
+    .hint { color: var(--muted); font-size: 12px; }
+    .split { display: grid; gap: 16px; grid-template-columns: 240px 1fr; }
+    @media (max-width: 760px) { .split { grid-template-columns: 1fr; } }
+    .plist button { display: block; width: 100%; text-align: left; margin-bottom: 6px; }
+    .plist button.active { background: var(--surface); }
+    .badge { font-size: 11px; color: var(--muted); }
+    .draft { color: var(--accent); }
+    .tags label { display: inline-flex; gap: 5px; margin: 0 10px 6px 0; font-size: 14px; color: var(--text); }
+    .preview { width: 100%; max-width: 360px; border: 1px solid var(--line); display: block; margin-top: 6px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .publish { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); padding: 10px 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .publish input { flex: 1 1 260px; }
+    #status { flex-basis: 100%; font-size: 13px; white-space: pre-wrap; min-height: 1em; }
+    #status.ok { color: var(--ok); } #status.err { color: var(--bad); }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>Site admin</strong>
+    <span>Local only. Works while `npm run dev` runs on this PC. Save writes files; Publish sends them to the live site.</span>
+  </header>
+
+  <nav class="tabs">
+    <button type="button" data-tab="settings" class="active">Settings</button>
+    <button type="button" data-tab="projects">Projects</button>
+    <button type="button" data-tab="files">Files</button>
+  </nav>
+
+  <main>
+    <section id="settings" class="tab"></section>
+    <section id="projects" class="tab" hidden>
+      <div class="split">
+        <aside class="plist" id="plist"></aside>
+        <form id="pform" onsubmit="return false"></form>
+      </div>
+    </section>
+    <section id="files" class="tab" hidden></section>
+  </main>
+
+  <footer class="publish">
+    <input id="msg" placeholder="What changed? (short note for the commit)" />
+    <button type="button" class="primary" id="publish">Publish to site</button>
+    <div id="status"></div>
+  </footer>
+
+  <script>
+    // ---- tiny helpers ---------------------------------------------------------
+    const $ = (s) => document.querySelector(s);
+    const get = (o, p) => p.split('.').reduce((a, k) => a?.[k], o);
+    const put = (o, p, v) => { const ks = p.split('.'), last = ks.pop(); ks.reduce((a, k) => a[k], o)[last] = v; };
+    const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    let S = null;      // { config, tags, projects }
+    let cur = null;    // selected project slug, or '__new'
+    let D = null;      // editing copy of the selected project's frontmatter
+    let B = '';        // editing copy of the body text
+
+    function say(text, ok = true) { const el = $('#status'); el.textContent = text; el.className = ok ? 'ok' : 'err'; }
+
+    async function api(route, body) {
+      const opts = body === undefined ? {} : { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) };
+      const r = await fetch('/__admin/api/' + route, opts);
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || 'Request failed');
+      return j;
+    }
+    function toBase64(file) {
+      return new Promise((res, rej) => {
+        const fr = new FileReader();
+        fr.onload = () => res(String(fr.result).split(',')[1]);
+        fr.onerror = rej;
+        fr.readAsDataURL(file);
+      });
+    }
+    async function upload(file, target, extra = {}) {
+      return api('upload', { target, filename: file.name, base64: await toBase64(file), ...extra });
+    }
+
+    // ---- settings ------------------------------------------------------------
+    const FEATURES = {
+      showHeroArm: 'Robot arm in hero', showPinnedRow: 'Pinned row on home', showRecentRow: 'Recent row on home',
+      showAvailability: 'Availability line', showCv: 'CV download buttons', showPicture: 'Portrait on About',
+      showPhone: 'Phone number on contact', showAcademic: 'Grade and courses on About',
+      showProjectTimeline: 'Project timeline on About', showThemeToggle: 'Dark / light switch in header',
+    };
+    // [label, path, type, options?]. Types: text, textarea, number, bool, select, lines (one item per line).
+    const SETTINGS = [
+      ['Identity', [
+        ['Site name (header, footer, titles)', 'name', 'text'],
+        ['Site URL (keep equal to astro.config.mjs)', 'siteUrl', 'text'],
+        ['Meta description (search results)', 'description', 'textarea'],
+        ['Location (About page)', 'location', 'text'],
+        ['Availability line (under the hero)', 'availability', 'text'],
+        ['Default theme for first visit', 'defaultTheme', 'select', ['dark', 'light']],
+      ]],
+      ['Contact', [
+        ['Email', 'email', 'text'],
+        ['Phone (only shown if the toggle is on)', 'phone', 'text'],
+        ['GitHub URL', 'github', 'text'],
+        ['LinkedIn URL (empty hides it)', 'linkedin', 'text'],
+      ]],
+      ['Home text', [
+        ['Eyebrow line', 'hero.eyebrow', 'text'],
+        ['Headline', 'hero.headline', 'text'],
+        ['Intro', 'hero.intro', 'textarea'],
+      ]],
+      ['Projects', [
+        ['Pinned projects: folder names, one per line, in order (max 6)', 'pinnedProjects', 'lines'],
+        ['Max cards in the Recent row', 'recentCount', 'number'],
+        ['Show drafts when running dev', 'showDraftsInDev', 'bool'],
+      ]],
+      ['Hero arm', [
+        ['Link thickness (px)', 'arm.linkWidth', 'number'],
+        ['Arm moves on its own when nobody points at it', 'arm.idleMotion', 'bool'],
+      ]],
+      ['About page', [
+        ['Portrait description (alt text)', 'portraitAlt', 'text'],
+        ['Short bio', 'about.bio', 'textarea'],
+        ['Grade average', 'about.academic.grade', 'text'],
+        ['Relevant courses, one per line', 'about.academic.courses', 'lines'],
+      ]],
+      ['Show / hide', Object.entries(FEATURES).map(([k, label]) => [label, 'features.' + k, 'bool'])],
+    ];
+
+    function fieldEl(label, path, type, options) {
+      const val = get(S.config, path);
+      const wrap = document.createElement('label');
+      wrap.className = type === 'bool' ? 'chk' : 'fld';
+      let el;
+      if (type === 'bool') { el = Object.assign(document.createElement('input'), { type: 'checkbox', checked: !!val }); }
+      else if (type === 'select') { el = document.createElement('select'); options.forEach((o) => el.add(new Option(o, o))); el.value = val; }
+      else if (type === 'textarea' || type === 'lines') {
+        el = document.createElement('textarea');
+        el.rows = type === 'lines' ? 4 : 3;
+        el.value = type === 'lines' ? (val || []).join('\n') : (val ?? '');
+      } else { el = Object.assign(document.createElement('input'), { type: type === 'number' ? 'number' : 'text', value: val ?? '' }); }
+      el.addEventListener('input', () => {
+        let v;
+        if (type === 'bool') v = el.checked;
+        else if (type === 'number') v = Number(el.value);
+        else if (type === 'lines') v = el.value.split('\n').map((s) => s.trim()).filter(Boolean);
+        else v = el.value;
+        put(S.config, path, v);
+      });
+      if (type === 'bool') { wrap.append(el, ' ' + label); }
+      else { wrap.append(label, el); }
+      return wrap;
+    }
+
+    function renderSettings() {
+      const box = $('#settings');
+      box.innerHTML = '';
+      const head = document.createElement('div');
+      head.className = 'row';
+      head.innerHTML = '<button type="button" class="primary" id="saveCfg">Save settings</button><span class="hint">Writes src/site.config.ts. Then press Publish.</span>';
+      box.append(head);
+      for (const [title, fields] of SETTINGS) {
+        const g = document.createElement('div');
+        g.className = 'group';
+        g.append(Object.assign(document.createElement('h2'), { textContent: title }));
+        for (const f of fields) g.append(fieldEl(f[0], f[1], f[2], f[3]));
+        box.append(g);
+      }
+      $('#saveCfg').onclick = async () => {
+        try { await api('config', { config: S.config }); say('Settings saved to the site config. Press Publish to send them live.'); }
+        catch (e) { say(e.message, false); }
+      };
+    }
+
+    // ---- projects ------------------------------------------------------------
+    function renderList() {
+      const list = $('#plist');
+      list.innerHTML = '';
+      const add = document.createElement('button');
+      add.type = 'button'; add.textContent = '+ New project';
+      add.onclick = () => selectProject('__new');
+      list.append(add);
+      for (const p of S.projects) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = cur === p.slug ? 'active' : '';
+        b.innerHTML = `${esc(p.data.title)}<br><span class="badge">${esc(p.data.date)} · <span class="${p.data.status === 'draft' ? 'draft' : ''}">${esc(p.data.status)}</span></span>`;
+        b.onclick = () => selectProject(p.slug);
+        list.append(b);
+      }
+    }
+
+    function selectProject(slug) {
+      cur = slug;
+      if (slug === '__new') {
+        D = { title: '', date: new Date().toISOString().slice(0, 10), summary: '', tags: [], status: 'draft', cover: '', coverAlt: '', links: [] };
+        B = '';
+      } else {
+        const p = S.projects.find((x) => x.slug === slug);
+        D = JSON.parse(JSON.stringify(p.data));
+        B = p.body;
+      }
+      renderList();
+      renderForm();
+    }
+
+    function renderForm() {
+      const isNew = cur === '__new';
+      const slug = isNew ? '' : cur;
+      const coverUrl = D.cover && !isNew ? `/src/content/projects/${slug}/${D.cover.replace('./', '')}` : '';
+      const linkText = (D.links || []).map((l) => `${l.label} | ${l.url}`).join('\n');
+      const tagBoxes = S.tags.map((t) => `<label><input type="checkbox" name="tag" value="${t}" ${D.tags?.includes(t) ? 'checked' : ''}> ${t}</label>`).join('');
+      $('#pform').innerHTML = `
+        <div class="group">
+          <h2>${isNew ? 'New project' : 'Edit project'}</h2>
+          <label class="fld">Folder name (URL address, lowercase, dashes)
+            <input id="slug" value="${esc(slug)}" ${isNew ? '' : 'readonly'} placeholder="my-new-project"></label>
+          <label class="fld">Title (max 80)<input id="title" value="${esc(D.title)}"></label>
+          <label class="fld">Summary (max 160)<textarea id="summary" rows="2">${esc(D.summary)}</textarea></label>
+          <label class="fld">Date<input id="date" type="date" value="${esc(D.date)}"></label>
+          <label class="fld">Last updated (optional)<input id="updated" type="date" value="${esc(D.updated || '')}"></label>
+          <label class="fld">Status<select id="status-sel"><option value="draft">draft (hidden on the site)</option><option value="published">published</option></select></label>
+          <div class="fld">Tags (at least one)<div class="tags">${tagBoxes}</div></div>
+          <label class="fld">Cover description (alt text, required)<input id="coverAlt" value="${esc(D.coverAlt)}"></label>
+          <div class="fld">Cover picture
+            ${coverUrl ? `<img class="preview" src="${coverUrl}" alt="">` : '<span class="hint">No cover yet.</span>'}
+            <input type="file" id="coverFile" accept="image/*">
+            <span class="hint">Uploading replaces the cover immediately. Set the folder name first for a new project.</span>
+          </div>
+          <label class="fld">Links, one per line as "Label | https://..."<textarea id="links" rows="3">${esc(linkText)}</textarea></label>
+        </div>
+        <div class="group">
+          <h2>Text (Markdown)</h2>
+          <textarea id="body" rows="18" style="min-height:300px">${esc(B)}</textarea>
+          <div class="row">
+            <input type="file" id="imgFile" accept="image/*">
+            <span class="hint">Adds the picture to this project folder and inserts it at the cursor.</span>
+          </div>
+        </div>
+        <div class="row">
+          <button type="button" class="primary" id="saveP">Save project</button>
+          ${isNew ? '' : '<span class="hint">Set status to draft to hide it from the site.</span>'}
+        </div>`;
+      $('#status-sel').value = D.status;
+
+      $('#coverFile').onchange = async (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        try {
+          const slugNow = $('#slug').value.trim();
+          const r = await upload(file, 'cover', { slug: slugNow });
+          D.cover = r.file;
+          say('Cover uploaded. Press Save project to keep it.');
+          renderForm();
+        } catch (err) { say(err.message, false); }
+      };
+      $('#imgFile').onchange = async (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        try {
+          const r = await upload(file, 'image', { slug: $('#slug').value.trim() });
+          const ta = $('#body');
+          const pos = ta.selectionStart ?? ta.value.length;
+          ta.value = ta.value.slice(0, pos) + '\n' + r.markdown + '\n' + ta.value.slice(pos);
+          B = ta.value;
+          say('Picture added. Edit the alt text in the brackets, then Save project.');
+        } catch (err) { say(err.message, false); }
+      };
+      $('#saveP').onclick = saveProject;
+    }
+
+    async function saveProject() {
+      const slug = $('#slug').value.trim();
+      const data = {
+        title: $('#title').value.trim(),
+        summary: $('#summary').value.trim(),
+        date: $('#date').value,
+        updated: $('#updated').value || undefined,
+        status: $('#status-sel').value,
+        tags: [...document.querySelectorAll('input[name=tag]:checked')].map((c) => c.value),
+        coverAlt: $('#coverAlt').value.trim(),
+        cover: D.cover,
+        links: $('#links').value.split('\n').map((l) => l.trim()).filter(Boolean).map((l) => {
+          const [label, ...rest] = l.split('|');
+          return { label: label.trim(), url: rest.join('|').trim() };
+        }),
+      };
+      try {
+        await api('project', { slug, isNew: cur === '__new', data, body: $('#body').value });
+        await load();
+        cur = slug;
+        selectProject(slug);
+        say('Project saved. Press Publish to send it live.');
+      } catch (e) { say(e.message, false); }
+    }
+
+    // ---- files ---------------------------------------------------------------
+    function renderFiles() {
+      const box = $('#files');
+      const stamp = Date.now();
+      box.innerHTML = `
+        <div class="group">
+          <h2>Portrait (About page)</h2>
+          <img class="preview" src="/src/assets/about/portrait.jpg?v=${stamp}" alt="Current portrait" style="max-width:260px">
+          <input type="file" id="fPortrait" accept=".jpg,.jpeg,image/jpeg">
+          <span class="hint">Must be a .jpg. Replaces the current portrait.</span>
+        </div>
+        <div class="group">
+          <h2>CV, English</h2>
+          <a href="/files/cv-en.pdf?v=${stamp}" target="_blank">Open current CV (English)</a>
+          <input type="file" id="fCvEn" accept=".pdf,application/pdf">
+        </div>
+        <div class="group">
+          <h2>CV, Norwegian</h2>
+          <a href="/files/cv-no.pdf?v=${stamp}" target="_blank">Open current CV (Norwegian)</a>
+          <input type="file" id="fCvNo" accept=".pdf,application/pdf">
+        </div>`;
+      const bind = (id, target) => {
+        $(id).onchange = async (e) => {
+          const file = e.target.files[0]; if (!file) return;
+          try { await upload(file, target); say('Uploaded. Press Publish to send it live.'); renderFiles(); }
+          catch (err) { say(err.message, false); }
+        };
+      };
+      bind('#fPortrait', 'portrait');
+      bind('#fCvEn', 'cv-en');
+      bind('#fCvNo', 'cv-no');
+    }
+
+    // ---- publish -------------------------------------------------------------
+    $('#publish').onclick = async () => {
+      if (!confirm('Commit and push to GitHub? This updates the live site (about a minute).')) return;
+      try {
+        const r = await api('publish', { message: $('#msg').value });
+        say(r.published ? 'Published. Cloudflare will rebuild the site in about a minute.\n' + r.output : r.output);
+      } catch (e) { say(e.message, false); }
+    };
+
+    // ---- tabs ----------------------------------------------------------------
+    document.querySelectorAll('nav.tabs button').forEach((b) => b.onclick = () => {
+      document.querySelectorAll('nav.tabs button').forEach((x) => x.classList.toggle('active', x === b));
+      document.querySelectorAll('.tab').forEach((t) => t.hidden = t.id !== b.dataset.tab);
+    });
+
+    // ---- start ---------------------------------------------------------------
+    async function load() {
+      S = await api('state');
+      renderSettings();
+      renderList();
+      renderFiles();
+      if (cur === null && S.projects.length) selectProject(S.projects[0].slug);
+      else if (cur === null) renderForm();
+    }
+    load().catch((e) => say('Could not load: ' + e.message, false));
+  </script>
+</body>
+</html>

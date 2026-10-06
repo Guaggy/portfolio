@@ -22,3 +22,9 @@ See `CLAUDE.md` for the full conventions.
 ## Publishing
 
 Pushing to `main` on GitHub triggers a Cloudflare build (`npm run build`) and deploy (`npx wrangler deploy`).
+
+## Local admin (/admin)
+
+Run `npm run dev`, then open http://127.0.0.1:4321/admin. It edits the site config, projects (text, tags, cover, pictures), the portrait and the CVs. Save writes the files. Publish commits and pushes them to GitHub, which triggers the Cloudflare build.
+
+The admin only exists in the dev server. It is not part of the public build, and it refuses requests from other hosts.

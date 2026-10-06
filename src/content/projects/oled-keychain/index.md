@@ -1,14 +1,16 @@
 ---
-title: "OLED Keychain on an ATtiny85"
+title: OLED Keychain on an ATtiny85
 date: 2026-09-29
-summary: "A coin-cell keychain with a 128×64 OLED, custom firmware, and a QR code generated at build time."
-tags: [Embedded, CAD]
+summary: A coin-cell keychain with a 128×64 OLED, custom firmware, and a QR code generated at build time.
+tags:
+  - Embedded
+  - CAD
 status: published
 cover: ./cover.jpg
-coverAlt: "Placeholder cover for the OLED Keychain project"
+coverAlt: Placeholder cover for the OLED Keychain project
 links:
-  - label: "Source code (GitHub)"
-    url: "https://github.com/Guaggy/attiny85-keychain"
+  - label: Source code (GitHub)
+    url: https://github.com/Guaggy/attiny85-keychain
 ---
 
 A small keychain that runs on a CR2032 coin cell and shows its own stats on an OLED.
