@@ -1,90 +1,74 @@
 ---
-// PROJECT TIMELINE: one lane per published project, a bar from its date to its updated date (or a dot if none).
-// Built at build time from the project files. Range: first project to today, padded by one month.
+// PROJECT TIMELINE: one line in time, one point per published project at its publish date (frontmatter `date`).
+// Labels alternate above and below the line so neighbouring points stay readable.
+// Built at build time. Range: first publish date to today (or the latest date), padded by one month, at least 6 months.
 import type { Project } from '../lib/projects';
 
 interface Props { projects: Project[] }
 const { projects } = Astro.props;
 
 const DAY = 86_400_000;
-// Oldest first, so the graph reads top-to-bottom like a history.
 const items = [...projects].sort((a, b) => a.data.date.valueOf() - b.data.date.valueOf());
+const first = items.length ? items[0].data.date.valueOf() : Date.now();
+const last = items.length ? items[items.length - 1].data.date.valueOf() : Date.now();
 
-// Range: first project date to today (or latest updated date), padded and at least 6 months wide.
-const first = items.length ? Math.min(...items.map((p) => p.data.date.valueOf())) : Date.now();
-const last = Math.max(Date.now(), ...items.map((p) => (p.data.updated ?? p.data.date).valueOf()));
 const startDate = new Date(first - 30 * DAY);
-const s = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
-const endDate = new Date(last + 30 * DAY);
-let e = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 1);
-if (e.valueOf() - s.valueOf() < 180 * DAY) e = new Date(s.getFullYear(), s.getMonth() + 6, 1);
-const span = e.valueOf() - s.valueOf();
-const pct = (t: number) => ((t - s.valueOf()) / span) * 100;
+const start = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+const endDate = new Date(Math.max(Date.now(), last) + 30 * DAY);
+let end = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 1);
+if (end.valueOf() - start.valueOf() < 180 * DAY) end = new Date(start.getFullYear(), start.getMonth() + 6, 1);
+const span = end.valueOf() - start.valueOf();
+const pct = (t: number) => ((t - start.valueOf()) / span) * 100;
 
 // Axis label every three months.
 const ticks: { left: number; label: string }[] = [];
-for (let d = new Date(s); d < e; d = new Date(d.getFullYear(), d.getMonth() + 3, 1)) {
+for (let d = new Date(start); d < end; d = new Date(d.getFullYear(), d.getMonth() + 3, 1)) {
   ticks.push({ left: pct(d.valueOf()), label: d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }) });
 }
 
-const rows = items.map((p) => {
-  const start = pct(p.data.date.valueOf());
-  const end = pct((p.data.updated ?? p.data.date).valueOf());
-  return {
-    id: p.id,
-    title: p.data.title,
-    draft: p.data.status === 'draft',
-    start,
-    width: Math.max(end - start, 1.2),
-    hasRange: Boolean(p.data.updated),
-    dateText: p.data.date.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }),
-  };
-});
+const points = items.map((p, i) => ({
+  id: p.id,
+  title: p.data.title,
+  dateText: p.data.date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+  left: pct(p.data.date.valueOf()),
+  side: i % 2 === 0 ? 'above' : 'below',
+  draft: p.data.status === 'draft',
+}));
 ---
-<figure class="ptl">
-  <div class="ptl-axis" aria-hidden="true">
-    <span class="ptl-spacer"></span>
-    <div class="ptl-ticks">
-      {ticks.map((t) => <span style={`left:${t.left.toFixed(2)}%`}>{t.label}</span>)}
+<figure class="tl">
+  <div class="tl-scroll">
+    <div class="tl-track">
+      <div class="tl-line"></div>
+      {ticks.map((t, i) => <span class={i === 0 ? "tl-tick first" : "tl-tick"} style={`left:${t.left.toFixed(2)}%`}>{t.label}</span>)}
+      {points.map((p) => (
+        <a class={`tl-point ${p.side}`} href={`/projects/${p.id}/`} style={`left:${p.left.toFixed(2)}%`}>
+          <span class="tl-dot" aria-hidden="true"></span>
+          <span class="tl-label">
+            {p.title}
+            <small class="mono">published {p.dateText}{p.draft && ' · draft'}</small>
+          </span>
+        </a>
+      ))}
     </div>
   </div>
-  <ol class="ptl-rows">
-    {rows.map((r) => (
-      <li class="ptl-row">
-        <a class="ptl-label" href={`/projects/${r.id}/`}>
-          {r.title}
-          <span class="mono">{r.dateText}{r.draft && ' · draft'}</span>
-        </a>
-        <div class="ptl-track" role="img" aria-label={`${r.title}, from ${r.dateText}`}>
-          <span class="ptl-bar" style={`left:${r.start.toFixed(2)}%;width:${r.width.toFixed(2)}%`} data-range={r.hasRange ? 'yes' : 'no'}></span>
-          <span class="ptl-dot" style={`left:${r.start.toFixed(2)}%`}></span>
-        </div>
-      </li>
-    ))}
-  </ol>
   <figcaption class="mono">
-    {rows.length === 0 ? 'No published projects yet.' : `${rows.length} project${rows.length === 1 ? '' : 's'} · bars run from start to last update`}
+    {points.length === 0 ? 'No published projects yet.' : `${points.length} project${points.length === 1 ? '' : 's'} · one point per publish date`}
   </figcaption>
 </figure>
 
 <style>
-  .ptl { margin: 0; }
-  .ptl-axis, .ptl-row { display: grid; grid-template-columns: 220px 1fr; gap: 16px; align-items: center; }
-  .ptl-spacer { display: block; }
-  .ptl-ticks { position: relative; height: 1.6em; color: var(--muted); font: 11px "IBM Plex Mono", monospace; }
-  .ptl-ticks span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
-  .ptl-rows { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--line); }
-  .ptl-row { padding: 12px 0; border-bottom: 1px solid var(--line); }
-  .ptl-label { color: var(--text); text-decoration: none; display: flex; flex-direction: column; }
-  .ptl-label:hover { color: var(--accent); }
-  .ptl-label .mono { font-size: 0.7rem; }
-  .ptl-track { position: relative; height: 14px; background: repeating-linear-gradient(90deg, var(--line) 0 1px, transparent 1px 12.5%); }
-  .ptl-bar { position: absolute; top: 4px; height: 6px; background: var(--accent); opacity: 0.85; }
-  .ptl-bar[data-range="no"] { opacity: 0.45; }
-  .ptl-dot { position: absolute; top: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); transform: translateX(-50%); }
-  .ptl figcaption { margin-top: 10px; }
-  @media (max-width: 640px) {
-    .ptl-axis { display: none; }
-    .ptl-row { grid-template-columns: 1fr; gap: 8px; }
-  }
+  .tl { margin: 0; }
+  .tl-scroll { overflow-x: auto; padding: 8px 0 4px; }
+  .tl-track { position: relative; height: 210px; min-width: 620px; margin: 0 24px; }
+  .tl-line { position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: var(--line); }
+  .tl-tick { position: absolute; top: calc(50% + 8px); transform: translateX(-50%); color: var(--muted); font: 11px "IBM Plex Mono", monospace; white-space: nowrap; }
+  .tl-tick.first { transform: none; }
+  .tl-point { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 0; text-decoration: none; color: var(--text); }
+  .tl-dot { display: block; width: 14px; height: 14px; margin: 0 auto; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); box-sizing: content-box; }
+  .tl-label { position: absolute; left: 50%; transform: translateX(-50%); width: 190px; text-align: center; font-size: 14px; line-height: 1.3; }
+  .tl-label small { display: block; margin-top: 2px; font-size: 0.68rem; }
+  .tl-point:hover .tl-label, .tl-point:focus-visible .tl-label { color: var(--accent); }
+  .tl-point.above .tl-label { bottom: 22px; }
+  .tl-point.below .tl-label { top: 22px; }
+  .tl figcaption { margin-top: 10px; }
 </style>

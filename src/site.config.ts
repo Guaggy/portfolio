@@ -9,7 +9,7 @@ export type SiteStatus = 'live' | 'maintenance';
 
 export const siteConfig = {
   // ---- Site status ----------------------------------------------------------
-  siteStatus: "live" as SiteStatus, // live = normal site; maintenance = placeholder page on every address
+  siteStatus: "maintenance" as SiteStatus, // live = normal site; maintenance = placeholder page on every address
   searchConsoleVerification: "WWbkeG8gm7ap-wvdMXfU9cLDsgHnGVb2YjGSeMepMKE", // Google Search Console verification code (empty = not set)
 
   // ---- Identity -------------------------------------------------------------
