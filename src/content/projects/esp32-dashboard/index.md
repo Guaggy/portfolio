@@ -3,7 +3,7 @@ title: "ESP32-S3 Dashboard"
 date: 2026-09-26
 summary: "A wall-mounted workbench display: focus timer, tasks, calendar, Claude Code alerts and home stats on a LilyGO T-Display S3."
 tags: [Embedded, Automation]
-status: draft
+status: published
 cover: ./cover.jpg
 coverAlt: "Placeholder cover for the ESP32-S3 Dashboard project"
 links:

@@ -1,0 +1,90 @@
+---
+// PROJECT TIMELINE: one lane per published project, a bar from its date to its updated date (or a dot if none).
+// Built at build time from the project files. Range: first project to today, padded by one month.
+import type { Project } from '../lib/projects';
+
+interface Props { projects: Project[] }
+const { projects } = Astro.props;
+
+const DAY = 86_400_000;
+// Oldest first, so the graph reads top-to-bottom like a history.
+const items = [...projects].sort((a, b) => a.data.date.valueOf() - b.data.date.valueOf());
+
+// Range: first project date to today (or latest updated date), padded and at least 6 months wide.
+const first = items.length ? Math.min(...items.map((p) => p.data.date.valueOf())) : Date.now();
+const last = Math.max(Date.now(), ...items.map((p) => (p.data.updated ?? p.data.date).valueOf()));
+const startDate = new Date(first - 30 * DAY);
+const s = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+const endDate = new Date(last + 30 * DAY);
+let e = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 1);
+if (e.valueOf() - s.valueOf() < 180 * DAY) e = new Date(s.getFullYear(), s.getMonth() + 6, 1);
+const span = e.valueOf() - s.valueOf();
+const pct = (t: number) => ((t - s.valueOf()) / span) * 100;
+
+// Axis label every three months.
+const ticks: { left: number; label: string }[] = [];
+for (let d = new Date(s); d < e; d = new Date(d.getFullYear(), d.getMonth() + 3, 1)) {
+  ticks.push({ left: pct(d.valueOf()), label: d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }) });
+}
+
+const rows = items.map((p) => {
+  const start = pct(p.data.date.valueOf());
+  const end = pct((p.data.updated ?? p.data.date).valueOf());
+  return {
+    id: p.id,
+    title: p.data.title,
+    draft: p.data.status === 'draft',
+    start,
+    width: Math.max(end - start, 1.2),
+    hasRange: Boolean(p.data.updated),
+    dateText: p.data.date.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }),
+  };
+});
+---
+<figure class="ptl">
+  <div class="ptl-axis" aria-hidden="true">
+    <span class="ptl-spacer"></span>
+    <div class="ptl-ticks">
+      {ticks.map((t) => <span style={`left:${t.left.toFixed(2)}%`}>{t.label}</span>)}
+    </div>
+  </div>
+  <ol class="ptl-rows">
+    {rows.map((r) => (
+      <li class="ptl-row">
+        <a class="ptl-label" href={`/projects/${r.id}/`}>
+          {r.title}
+          <span class="mono">{r.dateText}{r.draft && ' · draft'}</span>
+        </a>
+        <div class="ptl-track" role="img" aria-label={`${r.title}, from ${r.dateText}`}>
+          <span class="ptl-bar" style={`left:${r.start.toFixed(2)}%;width:${r.width.toFixed(2)}%`} data-range={r.hasRange ? 'yes' : 'no'}></span>
+          <span class="ptl-dot" style={`left:${r.start.toFixed(2)}%`}></span>
+        </div>
+      </li>
+    ))}
+  </ol>
+  <figcaption class="mono">
+    {rows.length === 0 ? 'No published projects yet.' : `${rows.length} project${rows.length === 1 ? '' : 's'} · bars run from start to last update`}
+  </figcaption>
+</figure>
+
+<style>
+  .ptl { margin: 0; }
+  .ptl-axis, .ptl-row { display: grid; grid-template-columns: 220px 1fr; gap: 16px; align-items: center; }
+  .ptl-spacer { display: block; }
+  .ptl-ticks { position: relative; height: 1.6em; color: var(--muted); font: 11px "IBM Plex Mono", monospace; }
+  .ptl-ticks span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+  .ptl-rows { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--line); }
+  .ptl-row { padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .ptl-label { color: var(--text); text-decoration: none; display: flex; flex-direction: column; }
+  .ptl-label:hover { color: var(--accent); }
+  .ptl-label .mono { font-size: 0.7rem; }
+  .ptl-track { position: relative; height: 14px; background: repeating-linear-gradient(90deg, var(--line) 0 1px, transparent 1px 12.5%); }
+  .ptl-bar { position: absolute; top: 4px; height: 6px; background: var(--accent); opacity: 0.85; }
+  .ptl-bar[data-range="no"] { opacity: 0.45; }
+  .ptl-dot { position: absolute; top: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); transform: translateX(-50%); }
+  .ptl figcaption { margin-top: 10px; }
+  @media (max-width: 640px) {
+    .ptl-axis { display: none; }
+    .ptl-row { grid-template-columns: 1fr; gap: 8px; }
+  }
+</style>

@@ -1,12 +1,15 @@
 ---
-// ABOUT & CONTACT: portrait, bio, timeline, skills, CV downloads and contact details.
+// ABOUT & CONTACT: portrait, short bio, academic facts, project timeline, CV downloads and contact details.
 // Text lives in src/site.config.ts > about. Portrait file: src/assets/about/portrait.jpg (replace it, keep the name).
 import { Image } from 'astro:assets';
 import Base from '../layouts/Base.astro';
+import ProjectTimeline from '../components/ProjectTimeline.astro';
 import portrait from '../assets/about/portrait.jpg';
 import { siteConfig } from '../site.config';
+import { visibleProjects } from '../lib/projects';
 
 const f = siteConfig.features;
+const projects = await visibleProjects();
 ---
 <Base current="/about/" title="About & contact" description="About Even Mælum and how to get in touch.">
   <section class="about">
@@ -16,20 +19,30 @@ const f = siteConfig.features;
       )}
       <div>
         <h1>About</h1>
-        {siteConfig.about.bio.map((p) => <p>{p}</p>)}
+        <p>{siteConfig.about.bio}</p>
         <p class="mono">{siteConfig.location}</p>
+
+        {f.showAcademic && (
+          <dl class="facts">
+            <dt>Grade average</dt>
+            <dd>{siteConfig.about.academic.grade}</dd>
+            <dt>Relevant courses</dt>
+            <dd>
+              <ul class="courses">
+                {siteConfig.about.academic.courses.map((c) => <li>{c}</li>)}
+              </ul>
+            </dd>
+          </dl>
+        )}
       </div>
     </div>
 
-    <h2>Timeline</h2>
-    <ol class="timeline">
-      {siteConfig.about.timeline.map((t) => <li><span class="mono">{t.period}</span> {t.text}</li>)}
-    </ol>
-
-    <h2>Skills</h2>
-    <ul class="skills">
-      {siteConfig.about.skills.map((s) => <li>{s}</li>)}
-    </ul>
+    {f.showProjectTimeline && (
+      <section id="timeline">
+        <h2>Project timeline</h2>
+        <ProjectTimeline projects={projects} />
+      </section>
+    )}
 
     {f.showCv && (
       <section id="cv">

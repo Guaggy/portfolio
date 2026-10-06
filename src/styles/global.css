@@ -127,10 +127,10 @@ footer.bottom a { color: var(--muted); }
 .about-head { display: grid; gap: 24px; }
 @media (min-width: 720px) { .about-head { grid-template-columns: 260px 1fr; align-items: start; } }
 .portrait { width: 100%; border: 1px solid var(--line); }
-.timeline { list-style: none; padding: 0; margin: 0; }
-.timeline li { padding: 10px 0; border-bottom: 1px solid var(--line); }
-.timeline li span { display: inline-block; min-width: 11ch; color: var(--muted); }
-.skills { padding-left: 18px; }
+.facts { display: grid; grid-template-columns: max-content 1fr; gap: 8px 20px; margin: 20px 0 0; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; }
+.courses { padding-left: 18px; margin: 0; }
 .contact-list { list-style: none; padding: 0; margin: 0; }
 .contact-list li { margin: 6px 0; }
 

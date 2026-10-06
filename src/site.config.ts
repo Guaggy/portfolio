@@ -24,14 +24,16 @@ export const siteConfig = {
 
   // ---- Feature toggles ------------------------------------------------------
   features: {
-    showHeroArm: true,        // animated robot arm in the hero
-    showPinnedRow: true,      // "Pinned" scrollable row on the home page
-    showRecentRow: true,      // "Recent" scrollable row on the home page
-    showAvailability: true,   // availability line under the hero
-    showCv: true,             // CV download buttons (English + Norwegian)
-    showPicture: true,        // portrait on About (placeholder until replaced)
-    showPhone: false,         // phone number in the contact block
-    showThemeToggle: true,    // dark / light switch in the header
+    showHeroArm: true,         // animated robot arm in the hero
+    showPinnedRow: true,       // "Pinned" scrollable row on the home page
+    showRecentRow: true,       // "Recent" scrollable row on the home page
+    showAvailability: true,    // availability line under the hero
+    showCv: true,              // CV download buttons (English + Norwegian) on About
+    showPicture: true,         // portrait on About (placeholder until replaced)
+    showPhone: false,          // phone number in the contact block
+    showAcademic: true,        // grade average and relevant courses on About
+    showProjectTimeline: true, // project timeline graph on About (built from published projects)
+    showThemeToggle: true,     // dark / light switch in the header
   },
 
   // ---- Projects -------------------------------------------------------------
@@ -61,20 +63,19 @@ export const siteConfig = {
   // ---- About page text ------------------------------------------------------
   portraitAlt: 'Portrait of Even Mælum',
   about: {
-    bio: [
-      'MSc student in Mechanical and Energy Engineering at NTNU, with a main profile in robotics and automation. I build real systems that connect software to hardware: a robot arm that picks and stacks by camera, a semi-autonomous wheelchair with obstacle detection, and a pressure-sensing mat for care.',
-      'I am on exchange at the University of Western Australia in Perth in 2026 and have been nominated for Kyushu University in Japan in spring 2027. I am interested in robotics, computer vision, machine learning and AI-assisted development.',
-    ],
-    timeline: [
-      { period: '2023 – 2028', text: 'NTNU, Trondheim · MSc Mechanical and Energy Engineering (expected)' },
-      { period: 'Autumn 2026', text: 'University of Western Australia, Perth · exchange in robotics and data science' },
-      { period: 'Spring 2027', text: 'Kyushu University, Japan · exchange (nominated)' },
-    ],
-    skills: [
-      'Programming: Python, C++, MATLAB (basic), Git',
-      'Electronics: ESP32, Arduino, Raspberry Pi, sensors, PCB design, soldering',
-      'Robotics and vision: UR5, OpenCV, kinematics, control engineering, machine learning',
-      'Mechanical: Fusion 360, Abaqus (FEM), 3D printing, laser cutting, CNC milling (basic)',
-    ],
+    bio: 'MSc student in Mechanical and Energy Engineering at NTNU, focused on robotics and automation. I like building real systems that connect software to hardware, from robot arms and embedded boards to the measurements that show they work. Currently on exchange at UWA in Perth.',
+    // Academic facts. Source: the CV. Only these two items are used, per Even's choice.
+    academic: {
+      grade: '4.70 out of 5 (A = 5)',
+      courses: [
+        'Mechatronics',
+        'Control Engineering',
+        'Product Development',
+        'Machine Design',
+        'Finite Element Method (FEM)',
+        'Information Technology (Python)',
+        'Production Technology',
+      ],
+    },
   },
 };
