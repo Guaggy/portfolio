@@ -4,5 +4,9 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "portfolio",
   "compatibility_date": "2026-10-06",
-  "assets": { "directory": "./dist" }
+  "assets": { "directory": "./dist" },
+  "workers_dev": true,
+  // Attaches evenmaelum.dev to this Worker. Cloudflare provisions DNS + SSL automatically
+  // because the domain is on the same account. workers_dev keeps the .workers.dev URL as a fallback.
+  "routes": [{ "pattern": "evenmaelum.dev", "custom_domain": true }]
 }
