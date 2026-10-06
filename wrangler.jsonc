@@ -8,5 +8,8 @@
   "workers_dev": true,
   // Attaches evenmaelum.dev to this Worker. Cloudflare provisions DNS + SSL automatically
   // because the domain is on the same account. workers_dev keeps the .workers.dev URL as a fallback.
-  "routes": [{ "pattern": "evenmaelum.dev", "custom_domain": true }]
+  "routes": [
+    { "pattern": "evenmaelum.dev", "custom_domain": true },
+    { "pattern": "www.evenmaelum.dev", "custom_domain": true }
+  ]
 }
