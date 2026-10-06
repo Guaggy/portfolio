@@ -1,0 +1,24 @@
+---
+// PROJECT CARD: cover, tags, title and summary. Used in rows and the projects grid.
+// Styling lives in src/styles/global.css (.card).
+import { Image } from 'astro:assets';
+import type { Project } from '../lib/projects';
+
+interface Props { project: Project }
+const { project } = Astro.props;
+const { title, summary, tags, cover, coverAlt, date, status } = project.data;
+const href = `/projects/${project.id}/`;
+---
+<article class="card">
+  <a class="cover-link" href={href} tabindex="-1" aria-hidden="true">
+    <Image src={cover} alt={coverAlt} widths={[400, 800]} sizes="(min-width: 800px) 300px, 80vw" />
+  </a>
+  <div class="body">
+    <p class="mono meta">
+      {date.getFullYear()} · {tags.join(' · ')}
+      {status === 'draft' && <span class="draft">DRAFT</span>}
+    </p>
+    <h3><a href={href}>{title}</a></h3>
+    <p>{summary}</p>
+  </div>
+</article>

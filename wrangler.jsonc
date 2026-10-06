@@ -1,0 +1,8 @@
+{
+  // Cloudflare Workers with static assets: serves the Astro build in dist/.
+  // Used by the "npx wrangler deploy" step of the Cloudflare build.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "portfolio",
+  "compatibility_date": "2026-10-06",
+  "assets": { "directory": "./dist" }
+}

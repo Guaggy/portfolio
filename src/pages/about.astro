@@ -1,0 +1,54 @@
+---
+// ABOUT & CONTACT: portrait, bio, timeline, skills, CV downloads and contact details.
+// Text lives in src/site.config.ts > about. Portrait file: src/assets/about/portrait.jpg (replace it, keep the name).
+import { Image } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import portrait from '../assets/about/portrait.jpg';
+import { siteConfig } from '../site.config';
+
+const f = siteConfig.features;
+---
+<Base current="/about/" title="About & contact" description="About Even Mælum and how to get in touch.">
+  <section class="about">
+    <div class="about-head">
+      {f.showPicture && (
+        <Image src={portrait} alt={siteConfig.portraitAlt} class="portrait" widths={[400, 800]} sizes="(min-width: 720px) 260px, 70vw" />
+      )}
+      <div>
+        <h1>About</h1>
+        {siteConfig.about.bio.map((p) => <p>{p}</p>)}
+        <p class="mono">{siteConfig.location}</p>
+      </div>
+    </div>
+
+    <h2>Timeline</h2>
+    <ol class="timeline">
+      {siteConfig.about.timeline.map((t) => <li><span class="mono">{t.period}</span> {t.text}</li>)}
+    </ol>
+
+    <h2>Skills</h2>
+    <ul class="skills">
+      {siteConfig.about.skills.map((s) => <li>{s}</li>)}
+    </ul>
+
+    {f.showCv && (
+      <section id="cv">
+        <h2>CV</h2>
+        <div class="btns">
+          <a class="btn primary" href={siteConfig.cv.english} download>Download CV (English)</a>
+          <a class="btn" href={siteConfig.cv.norwegian} download>Last ned CV (norsk)</a>
+        </div>
+      </section>
+    )}
+
+    <section id="contact">
+      <h2>Contact</h2>
+      <ul class="contact-list">
+        <li>Email: <a href={`mailto:${siteConfig.email}`}>{siteConfig.email}</a></li>
+        {f.showPhone && <li>Phone: <a href={`tel:${siteConfig.phone.replace(/\s/g, '')}`}>{siteConfig.phone}</a></li>}
+        {siteConfig.github && <li>GitHub: <a href={siteConfig.github} rel="me">{siteConfig.github.replace('https://', '')}</a></li>}
+        {siteConfig.linkedin && <li>LinkedIn: <a href={siteConfig.linkedin} rel="me">{siteConfig.linkedin.replace('https://', '')}</a></li>}
+      </ul>
+    </section>
+  </section>
+</Base>

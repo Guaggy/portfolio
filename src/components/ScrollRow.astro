@@ -1,0 +1,37 @@
+---
+// SCROLLABLE ROW: a horizontal row of cards with arrow buttons (desktop) and swipe (phones).
+// Used on the home page for "Pinned" and "Recent". Pass cards as the slot.
+interface Props {
+  id: string;     // unique per row, used for heading ids
+  title: string;  // visible heading
+  label: string;  // screen-reader name for the scroll region
+}
+const { id, title, label } = Astro.props;
+---
+<section class="row-sec" aria-labelledby={`${id}-h`}>
+  <div class="row-head">
+    <h2 id={`${id}-h`}>{title}</h2>
+    <div class="row-btns">
+      <button type="button" data-dir="-1" aria-label={`Scroll ${label} left`}>←</button>
+      <button type="button" data-dir="1" aria-label={`Scroll ${label} right`}>→</button>
+    </div>
+  </div>
+  <div class="row" role="region" aria-label={label} tabindex="0" data-row>
+    <slot />
+  </div>
+</section>
+
+<script>
+  // Arrow buttons scroll by one card width. Reduced motion jumps instead of animating.
+  document.querySelectorAll<HTMLElement>('[data-row]').forEach((row) => {
+    const sec = row.closest('section');
+    sec?.querySelectorAll<HTMLButtonElement>('button[data-dir]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const card = row.querySelector<HTMLElement>('.card');
+        const step = (card?.offsetWidth ?? 300) + 16;
+        const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        row.scrollBy({ left: Number(b.dataset.dir) * step, behavior: reduce ? 'auto' : 'smooth' });
+      }),
+    );
+  });
+</script>

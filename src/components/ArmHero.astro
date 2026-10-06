@@ -1,0 +1,149 @@
+---
+// HERO ARM: a two-link industrial arm that follows the pointer (inverse kinematics).
+// Look & feel: site.config.ts > arm.linkWidth (thickness) and arm.idleMotion (moves on its own).
+import { siteConfig } from '../site.config';
+
+// GEOMETRY, in SVG units (viewBox 400 × 300). Change these to change the arm's proportions.
+const L1 = 110;          // upper link length
+const L2 = 80;           // forearm length
+const BX = 200;          // base x (shoulder pivot)
+const BY = 262;          // base y (shoulder pivot)
+---
+<figure class="arm-fig">
+  <svg
+    id="arm"
+    class="arm"
+    viewBox="0 0 400 300"
+    role="img"
+    aria-label="Two-link industrial arm following the pointer"
+    data-idle={siteConfig.arm.idleMotion ? 'true' : 'false'}
+    data-l1={L1}
+    data-l2={L2}
+    data-bx={BX}
+    data-by={BY}
+    style={`--arm-link: ${siteConfig.arm.linkWidth}px`}
+  >
+    <path class="arc" id="arc1" d="" />
+    <rect class="plinth" x="150" y="262" width="100" height="14" rx="2" />
+    <line class="link" id="l1" x1={BX} y1={BY} x2={BX} y2={BY} />
+    <line class="link" id="l2" x1={BX} y1={BY} x2={BX} y2={BY} />
+    <circle class="joint" id="j1" cx={BX} cy={BY} r="7" />
+    <circle class="joint" id="j2" cx={BX} cy={BY} r="6" />
+    <circle class="hub" id="j0" cx={BX} cy={BY} r="3" />
+    <circle class="tool" id="tool" cx={BX} cy={BY} r="5" />
+    <circle class="tgt" id="tgt" cx={BX} cy={BY - 112} r="9" />
+    <text class="lbl" id="t1" x="0" y="0"></text>
+  </svg>
+  <figcaption class="ro mono">
+    <span>θ1 <b id="a1">–</b></span>
+    <span>θ2 <b id="a2">–</b></span>
+    <span>reach <b id="rc">–</b></span>
+  </figcaption>
+</figure>
+
+<style>
+  .arm-fig { margin: 0; background: var(--surface); border: 1px solid var(--line); }
+  .arm { width: 100%; height: auto; display: block; touch-action: pan-y; } /* pan-y: phones can still scroll past it */
+  .arm .plinth { fill: var(--line); }
+  .arm .link { stroke: #c9d0da; stroke-width: var(--arm-link, 8px); stroke-linecap: round; }
+  .arm .joint { fill: var(--surface); stroke: var(--accent); stroke-width: 2.5; }
+  .arm .hub { fill: var(--accent); }
+  .arm .tool { fill: none; stroke: var(--accent); stroke-width: 2.5; }
+  .arm .arc { fill: none; stroke: var(--accent); stroke-width: 1.5; }
+  .arm .tgt { fill: none; stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+  .arm .lbl { fill: var(--muted); font: 11px "IBM Plex Mono", monospace; }
+  .ro { display: flex; gap: 16px; flex-wrap: wrap; padding: 10px 14px; border-top: 1px solid var(--line); }
+  .ro b { color: var(--accent); font-weight: 500; }
+</style>
+
+<script>
+  // ARM MOTION: solves the two angles for the target every frame, then eases the arm towards it.
+  const svg = document.getElementById('arm') as SVGSVGElement | null;
+  if (svg) {
+    const L1 = Number(svg.dataset.l1), L2 = Number(svg.dataset.l2);
+    const BX = Number(svg.dataset.bx), BY = Number(svg.dataset.by);
+    const idle = svg.dataset.idle === 'true';
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const $ = (id: string) => document.getElementById(id) as unknown as SVGElement;
+    const set = (id: string, attrs: Record<string, string | number>) =>
+      Object.entries(attrs).forEach(([k, v]) => $(id).setAttribute(k, String(v)));
+
+    let target = { x: BX, y: BY - 112 };   // where the tool wants to go (SVG units)
+    let cur = { ...target };               // where the drawn target currently is (eased)
+    let pointer: { x: number; y: number } | null = null;
+    let running = true;
+    const t0 = performance.now();
+
+    // IK: two-link planar arm, elbow up. Returns angles (radians) and joint positions.
+    // q2 = elbow bend relative to link 1. The target is clamped to the reachable circle.
+    function solve(tx: number, ty: number) {
+      const x = tx - BX, y = BY - ty;
+      const d = Math.min(Math.hypot(x, y), L1 + L2 - 0.5);
+      const c2 = Math.max(-1, Math.min(1, (d * d - L1 * L1 - L2 * L2) / (2 * L1 * L2)));
+      const q2 = Math.acos(c2);
+      const q1 = Math.atan2(y, x) - Math.atan2(L2 * Math.sin(q2), L1 + L2 * Math.cos(q2));
+      const j2 = { x: BX + L1 * Math.cos(q1), y: BY - L1 * Math.sin(q1) };
+      const e = { x: j2.x + L2 * Math.cos(q1 + q2), y: j2.y - L2 * Math.sin(q1 + q2) };
+      return { q1, q2, j2, e };
+    }
+
+    // Draws the shoulder arc (radius 42) from the horizontal to link 1.
+    function shoulderArc(q1: number) {
+      const r = 42;
+      const p = (a: number) => `${(BX + r * Math.cos(a)).toFixed(1)} ${(BY - r * Math.sin(a)).toFixed(1)}`;
+      $('arc1').setAttribute('d', `M${p(0)} A${r} ${r} 0 0 0 ${p(q1)}`);
+    }
+
+    // Writes positions and readouts for the current target.
+    function render() {
+      const s = solve(cur.x, cur.y);
+      const f = (v: number) => v.toFixed(1);
+      set('l1', { x2: f(s.j2.x), y2: f(s.j2.y) });
+      set('l2', { x1: f(s.j2.x), y1: f(s.j2.y), x2: f(s.e.x), y2: f(s.e.y) });
+      set('j2', { cx: f(s.j2.x), cy: f(s.j2.y) });
+      set('tool', { cx: f(s.e.x), cy: f(s.e.y) });
+      set('tgt', { cx: f(cur.x), cy: f(cur.y) });
+      shoulderArc(s.q1);
+      set('t1', { x: f(BX + 56 * Math.cos(s.q1 / 2)), y: f(BY - 56 * Math.sin(s.q1 / 2)) });
+      $('t1').textContent = 'θ1';
+      $('a1').textContent = (s.q1 * 180 / Math.PI).toFixed(1) + '°';
+      $('a2').textContent = (s.q2 * 180 / Math.PI).toFixed(1) + '°';
+      $('rc').textContent = (Math.min(Math.hypot(cur.x - BX, BY - cur.y), L1 + L2) / (L1 + L2)).toFixed(2);
+    }
+
+    function tick(now: number) {
+      if (!pointer && idle) {
+        // slow figure-eight while nobody is pointing at the arm
+        const s = (now - t0) / 1000;
+        target = { x: BX + 90 * Math.sin(s * 0.6), y: 170 + 40 * Math.sin(s * 1.2) };
+      } else if (pointer) {
+        target = pointer;
+      }
+      cur.x += (target.x - cur.x) * 0.12;
+      cur.y += (target.y - cur.y) * 0.12;
+      render();
+      if (running) requestAnimationFrame(tick);
+    }
+
+    const toViewBox = (ev: PointerEvent) => {
+      const r = svg.getBoundingClientRect();
+      return { x: (ev.clientX - r.left) / r.width * 400, y: (ev.clientY - r.top) / r.height * 300 };
+    };
+    svg.addEventListener('pointermove', (ev) => { pointer = toViewBox(ev); });
+    svg.addEventListener('pointerleave', () => { pointer = null; });
+
+    // Pause the animation when the arm is scrolled out of view.
+    new IntersectionObserver(([e]) => {
+      const was = running;
+      running = e.isIntersecting;
+      if (running && !was && !reduce) requestAnimationFrame(tick);
+    }).observe(svg);
+
+    if (reduce) {
+      // Reduced motion: one still frame with the arm reaching out.
+      target = { x: 230, y: 130 }; cur = { ...target }; render();
+    } else {
+      requestAnimationFrame(tick);
+    }
+  }
+</script>

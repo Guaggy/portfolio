@@ -1,0 +1,140 @@
+/* GLOBAL STYLES
+ * Colour tokens are at the top. Dark is the default; light values apply under data-theme="light".
+ * Shared classes (cards, rows, buttons) live here so every page looks the same.
+ */
+
+/* ---- Colour tokens (dark default) ---- */
+:root {
+  --bg: #111317;          /* page background */
+  --surface: #181b21;     /* cards and panels */
+  --text: #e6e9ee;       /* body text */
+  --muted: #8a93a1;       /* secondary text */
+  --accent: #ff8a3d;      /* links, buttons, highlights */
+  --line: #262b33;        /* borders and dividers */
+  --focus: #ff8a3d;       /* keyboard focus ring */
+  color-scheme: dark;
+}
+
+/* ---- Light values (toggle in header) ---- */
+:root[data-theme="light"] {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --text: #15181d;
+  --muted: #5b6470;
+  --accent: #b84f14;      /* darkened for contrast on white */
+  --line: #d9dde3;
+  --focus: #b84f14;
+  color-scheme: light;
+}
+
+/* ---- Base ---- */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 17px/1.6 "IBM Plex Sans", system-ui, sans-serif;
+}
+a { color: var(--accent); }
+img { max-width: 100%; height: auto; display: block; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+main { min-height: 70vh; }
+h1 { font-size: clamp(2.2rem, 6vw, 4rem); line-height: 1.02; letter-spacing: -0.03em; margin: 14px 0 16px; }
+h2 { font-size: 1.5rem; margin: 40px 0 14px; }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+.mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.lead { color: var(--muted); max-width: 60ch; }
+
+/* ---- Skip link (keyboard users) ---- */
+.skip { position: absolute; left: -999px; top: 0; }
+.skip:focus { left: 16px; top: 8px; background: var(--surface); padding: 6px 10px; z-index: 9; }
+
+/* ---- Header and footer ---- */
+header.top { border-bottom: 1px solid var(--line); padding: 18px 0; }
+header.top .bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; }
+header.top .brand { color: var(--text); font-weight: 600; text-decoration: none; }
+header.top nav { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; }
+header.top nav a { color: var(--text); text-decoration: none; }
+header.top nav a[aria-current="page"] { color: var(--accent); }
+header.top button { background: none; color: var(--text); border: 1px solid var(--line); padding: 3px 10px; font: inherit; cursor: pointer; }
+footer.bottom { border-top: 1px solid var(--line); padding: 20px 0 36px; margin-top: 40px; color: var(--muted); }
+footer.bottom .bar { display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: space-between; }
+footer.bottom a { color: var(--muted); }
+
+/* ---- Buttons ---- */
+.btns { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+.btn { display: inline-block; padding: 10px 16px; border: 1px solid var(--accent); color: var(--text); text-decoration: none; }
+.btn.primary { background: var(--accent); color: var(--bg); }
+
+/* ---- Home hero ---- */
+.hero { display: grid; gap: 24px; padding: 48px 0 60px; align-items: center; }
+@media (min-width: 820px) { .hero { grid-template-columns: 1fr 1.1fr; } }
+.avail { color: var(--accent); margin: 12px 0 0; }
+
+/* ---- Scrollable rows (home) ---- */
+.row-sec { margin: 40px 0 0; }
+.row-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.row-head h2 { margin: 0 0 14px; }
+.row-btns button { background: none; color: var(--text); border: 1px solid var(--line); width: 36px; height: 36px; font: inherit; cursor: pointer; }
+.row {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 4px 2px 14px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+.all { margin: 24px 0 56px; }
+
+/* ---- Project card (used in rows and grid) ---- */
+.card {
+  flex: 0 0 min(300px, 80vw);
+  scroll-snap-align: start;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+}
+.card .cover-link img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; }
+.card .body { padding: 14px 16px 18px; }
+.card .meta { margin: 0; }
+.card h3 { margin: 6px 0; font-size: 1.1rem; }
+.card h3 a { color: var(--text); text-decoration: none; }
+.card p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+.draft { color: var(--accent); margin-left: 6px; }
+
+/* ---- Projects grid and tag filters ---- */
+.grid { display: grid; gap: 16px; grid-template-columns: 1fr; }
+@media (min-width: 720px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1000px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+.grid .card { flex: none; }
+.grid-item[hidden] { display: none; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 24px; }
+.filters button { background: none; color: var(--text); border: 1px solid var(--line); padding: 5px 12px; font: inherit; cursor: pointer; }
+.filters button[aria-pressed="true"] { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+.empty[hidden] { display: none; }
+
+/* ---- Project page ---- */
+.post { padding: 32px 0 56px; }
+.post .cover { width: 100%; height: auto; border: 1px solid var(--line); margin: 20px 0 28px; }
+.prose { max-width: 68ch; }
+.prose h2 { font-size: 1.3rem; }
+.links { padding-left: 18px; }
+
+/* ---- About and contact ---- */
+.about-head { display: grid; gap: 24px; }
+@media (min-width: 720px) { .about-head { grid-template-columns: 260px 1fr; align-items: start; } }
+.portrait { width: 100%; border: 1px solid var(--line); }
+.timeline { list-style: none; padding: 0; margin: 0; }
+.timeline li { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.timeline li span { display: inline-block; min-width: 11ch; color: var(--muted); }
+.skills { padding-left: 18px; }
+.contact-list { list-style: none; padding: 0; margin: 0; }
+.contact-list li { margin: 6px 0; }
+
+/* ---- Respect reduced motion ---- */
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}

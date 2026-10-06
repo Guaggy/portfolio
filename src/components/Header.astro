@@ -1,0 +1,42 @@
+---
+// SITE HEADER: navigation and the theme toggle. Links are defined in `links` below.
+import { siteConfig } from '../site.config';
+
+interface Props { current?: string }
+const { current } = Astro.props;
+
+// Add or rename nav items here. `href` must match a page under src/pages/.
+const links = [
+  { href: '/', label: 'Home' },
+  { href: '/projects/', label: 'Projects' },
+  { href: '/about/', label: 'About' },
+  { href: '/about/#contact', label: 'Contact' },
+];
+---
+<header class="top">
+  <div class="bar wrap">
+    <a class="brand" href="/">{siteConfig.name}</a>
+    <nav aria-label="Main">
+      {links.map((l) => (
+        <a href={l.href} aria-current={current === l.href ? 'page' : undefined}>{l.label}</a>
+      ))}
+      {siteConfig.features.showThemeToggle && (
+        <button id="theme" type="button" aria-label="Switch colour theme">Light</button>
+      )}
+    </nav>
+  </div>
+</header>
+
+<script>
+  // THEME TOGGLE: flips data-theme and remembers the choice in localStorage (a per-viewer convenience only).
+  const root = document.documentElement;
+  const btn = document.getElementById('theme');
+  const isLight = () => root.dataset.theme === 'light';
+  const label = () => { if (btn) btn.textContent = isLight() ? 'Dark' : 'Light'; };
+  label();
+  btn?.addEventListener('click', () => {
+    root.dataset.theme = isLight() ? 'dark' : 'light';
+    label();
+    try { localStorage.setItem('theme', root.dataset.theme); } catch (e) {}
+  });
+</script>

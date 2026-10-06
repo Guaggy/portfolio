@@ -1,0 +1,15 @@
+---
+// SITE FOOTER: contact links. Empty config values are hidden automatically.
+import { siteConfig } from '../site.config';
+const year = new Date().getFullYear();
+---
+<footer class="bottom">
+  <div class="bar wrap">
+    <span>© {year} {siteConfig.name}</span>
+    <span>
+      <a href={`mailto:${siteConfig.email}`}>{siteConfig.email}</a>
+      {siteConfig.github && <> · <a href={siteConfig.github} rel="me">GitHub</a></>}
+      {siteConfig.linkedin && <> · <a href={siteConfig.linkedin} rel="me">LinkedIn</a></>}
+    </span>
+  </div>
+</footer>

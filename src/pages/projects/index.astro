@@ -1,0 +1,49 @@
+---
+// PROJECTS: every visible project in a grid, with tag filter buttons above it.
+// Tag list comes from src/content.config.ts (TAGS).
+import Base from '../../layouts/Base.astro';
+import ProjectCard from '../../components/ProjectCard.astro';
+import { visibleProjects } from '../../lib/projects';
+
+const projects = await visibleProjects();
+const tags = [...new Set(projects.flatMap((p) => p.data.tags))].sort();
+---
+<Base current="/projects/" title="Projects" description="All projects by Even Mælum: robotics, embedded systems and vision.">
+  <h1>Projects</h1>
+  <p class="lead">Robotics, embedded systems, vision and design. Filter by topic.</p>
+
+  <div class="filters" role="group" aria-label="Filter by tag">
+    <button type="button" data-tag="all" aria-pressed="true">All</button>
+    {tags.map((t) => <button type="button" data-tag={t} aria-pressed="false">{t}</button>)}
+  </div>
+
+  <div class="grid">
+    {projects.map((p) => (
+      <div class="grid-item" data-tags={p.data.tags.join(' ')}>
+        <ProjectCard project={p} />
+      </div>
+    ))}
+  </div>
+  <p class="empty lead" hidden>No projects with this tag yet.</p>
+  {projects.length === 0 && <p class="lead">No projects published yet.</p>}
+</Base>
+
+<script>
+  // TAG FILTER: shows items whose data-tags include the chosen tag. "All" shows everything.
+  const buttons = document.querySelectorAll<HTMLButtonElement>('[data-tag]');
+  const items = document.querySelectorAll<HTMLElement>('.grid-item');
+  const empty = document.querySelector<HTMLElement>('.empty');
+  buttons.forEach((b) =>
+    b.addEventListener('click', () => {
+      const tag = b.dataset.tag ?? 'all';
+      buttons.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      let shown = 0;
+      items.forEach((i) => {
+        const ok = tag === 'all' || (i.dataset.tags ?? '').split(' ').includes(tag);
+        i.hidden = !ok;
+        if (ok) shown++;
+      });
+      if (empty) empty.hidden = shown > 0;
+    }),
+  );
+</script>

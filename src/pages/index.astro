@@ -1,0 +1,43 @@
+---
+// HOME: hero with the arm, then the "Pinned" and "Recent" scrollable rows.
+// Show/hide each part in src/site.config.ts > features.
+import Base from '../layouts/Base.astro';
+import ArmHero from '../components/ArmHero.astro';
+import ScrollRow from '../components/ScrollRow.astro';
+import ProjectCard from '../components/ProjectCard.astro';
+import { siteConfig } from '../site.config';
+import { pinnedProjects, recentProjects } from '../lib/projects';
+
+const f = siteConfig.features;
+const pinned = await pinnedProjects();
+const recent = await recentProjects();
+---
+<Base current="/" title={siteConfig.name}>
+  <section class="hero">
+    <div>
+      <p class="mono">{siteConfig.hero.eyebrow}</p>
+      <h1>{siteConfig.hero.headline}</h1>
+      <p class="lead">{siteConfig.hero.intro}</p>
+      {f.showAvailability && siteConfig.availability && <p class="avail mono">{siteConfig.availability}</p>}
+      <div class="btns">
+        <a class="btn primary" href="/projects/">View projects</a>
+        {f.showCv && <a class="btn" href="/about/#cv">Download CV</a>}
+      </div>
+    </div>
+    {f.showHeroArm && <ArmHero />}
+  </section>
+
+  {f.showPinnedRow && pinned.length > 0 && (
+    <ScrollRow id="pinned" title="Pinned" label="pinned projects">
+      {pinned.map((p) => <ProjectCard project={p} />)}
+    </ScrollRow>
+  )}
+
+  {f.showRecentRow && recent.length > 0 && (
+    <ScrollRow id="recent" title="Recent" label="recent projects">
+      {recent.map((p) => <ProjectCard project={p} />)}
+    </ScrollRow>
+  )}
+
+  <p class="all"><a href="/projects/">All projects →</a></p>
+</Base>

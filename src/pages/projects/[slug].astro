@@ -1,0 +1,45 @@
+---
+// PROJECT PAGE: one template for every project, built from src/content/projects/<slug>/index.md.
+import { Image } from 'astro:assets';
+import { render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { visibleProjects, type Project } from '../../lib/projects';
+
+// One page per visible project. Drafts get no page in production.
+export async function getStaticPaths() {
+  const projects = await visibleProjects();
+  return projects.map((project) => ({ params: { slug: project.id }, props: { project } }));
+}
+
+interface Props { project: Project }
+const { project } = Astro.props;
+const { title, summary, tags, cover, coverAlt, date, updated, status, links } = project.data;
+const { Content } = await render(project);
+const monthYear = (d: Date) => d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+---
+<Base title={title} description={summary}>
+  <article class="post">
+    <p class="mono">
+      {monthYear(date)} · {tags.join(' · ')}
+      {status === 'draft' && <span class="draft">DRAFT: not visible in production</span>}
+    </p>
+    <h1>{title}</h1>
+    <p class="lead">{summary}</p>
+    <Image src={cover} alt={coverAlt} class="cover" widths={[800, 1200, 1600]} sizes="(min-width: 900px) 800px, 100vw" />
+
+    <div class="prose">
+      <Content />
+    </div>
+
+    {links.length > 0 && (
+      <>
+        <h2>Links</h2>
+        <ul class="links">
+          {links.map((l) => <li><a href={l.url}>{l.label}</a></li>)}
+        </ul>
+      </>
+    )}
+    {updated && <p class="mono">Updated {monthYear(updated)}</p>}
+    <p><a href="/projects/">← All projects</a></p>
+  </article>
+</Base>

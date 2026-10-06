@@ -1,14 +1,24 @@
 # Even Mælum: portfolio
 
-Personal portfolio and blog. Live site: https://evenmaelum.dev (not deployed yet).
+Personal portfolio and blog. Live site: https://evenmaelum.dev
 
-Built with Astro (static), Markdown content, and Sveltia CMS at `/admin` (added later).
+Built with Astro (static), Markdown project posts, and Cloudflare Workers (static assets).
 
-## Status
+## Quick start
 
-Setup only. No site code yet.
+    npm install
+    npm run dev      # http://127.0.0.1:4321 (drafts visible here)
+    npm run build    # production build to dist/
 
-## Layout
+## Editing
 
-- `design/` colour palettes (CSS tokens)
-- `CLAUDE.md` conventions for working on this repo with Claude Code
+- **Main settings:** `src/site.config.ts` (text, links, toggles, pinned projects, CV, arm)
+- **Projects:** `src/content/projects/<slug>/index.md` with `cover.jpg` beside it
+- **Portrait:** `src/assets/about/portrait.jpg` (placeholder, replace and keep the name)
+- **CVs:** `public/files/cv-en.pdf` and `cv-no.pdf`
+
+See `CLAUDE.md` for the full conventions.
+
+## Publishing
+
+Pushing to `main` on GitHub triggers a Cloudflare build (`npm run build`) and deploy (`npx wrangler deploy`).
